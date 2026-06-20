@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import socket
 import ssl
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------------------- #
@@ -25,7 +28,7 @@ def read_headers(sock: socket.socket) -> bytes:
     """
     data = b""
     while b"\r\n\r\n" not in data:
-        chunk = sock.recv(1)
+        chunk = sock.recv(4096)
         if not chunk:
             break
         data += chunk
@@ -96,7 +99,7 @@ def establish_ws_tunnel(
     # 4. Read first response
     # ------------------------------------------------------------------ #
     first = read_headers(sock)
-    print(">> First response:\n", first.decode("latin1", errors="replace"), flush=True)
+    logger.debug("First response: %s", first.decode("latin1", errors="replace"))
 
     # ------------------------------------------------------------------ #
     # 5. If 100-Continue, send remaining blocks, else send them anyway
@@ -116,10 +119,10 @@ def establish_ws_tunnel(
         second = read_headers(sock)
         label = "Second response (no 100-Continue path)"
 
-    print(f">> {label}:\n", second.decode("latin1", errors="replace"), flush=True)
+    logger.debug("%s: %s", label, second.decode("latin1", errors="replace"))
 
     # ------------------------------------------------------------------ #
     # 6. Tunnel is live
     # ------------------------------------------------------------------ #
-    print("[*] WebSocket handshake complete – returning raw socket.")
+    logger.info("WebSocket handshake complete – tunnel is live.")
     return sock
